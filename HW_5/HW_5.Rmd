@@ -1,0 +1,189 @@
+---
+title: "Lab 5"
+author: "Zara Waheed"
+date: "March 12, 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.width=6,fig.height=4 ,out.width="1\\linewidth")
+pacman::p_load("class","ISLR","glmnet","ggplot2","arm","knitr","data.table","MASS","klaR","vcd","h2o","e1071", "class", "boot", "leaps", "base", "pls", "gbm", "tree", "randomForest")
+```
+
+
+### Question 8.3
+
+```{r}
+p <- seq(0,1,0.01)
+
+#For two classes
+gini <- 2*p*(1-p)
+err <- 1 - pmax(p, 1-p)
+ent <- -(p*log(p) + (1-p)*log(1-p))
+plot(NA, xlim = c(0,1), ylim = c(0,1), xlab = "p", ylab = "f")
+lines(p, gini, type = "l", col = "red", lwd = 1.5)
+lines(p, err, type = "l", col = "blue", lwd = 1.5)
+lines(p, ent, type = "l", col = "green", lwd = 1.5)
+```
+
+### Question 8.5
+
+# Majority vote:
+P is greater than 0.5 6/10 times so final classification is Red. 
+
+# Average probability:
+10 estimates = 0.45 each
+P(Class is Red | X) < 0.5, so final classification is Green. 
+
+
+### Question 8.7
+
+```{r}
+data("Boston")
+set.seed(100)
+
+train <- sample(1:nrow(Boston), nrow(Boston)/2)
+Boston_train <- Boston[train, -14]
+Boston_test <- Boston[-train, -14]
+y_train <- Boston[train, 14]
+y_test <- Boston[-train, 14]
+
+fit1 <- randomForest(Boston_train, y = y_train, xtest = Boston_test, ytest = y_test, mtry = ncol(Boston) - 1, ntree = 1000)
+fit2 <- randomForest(Boston_train, y = y_train, xtest = Boston_test, ytest = y_test, mtry = (ncol(Boston) - 1)/2, ntree = 1000)
+fit3 <- randomForest(Boston_train, y = y_train, xtest = Boston_test, ytest = y_test, mtry = sqrt(ncol(Boston) - 1)/3, ntree = 1000)
+
+plot(1:1000, fit1$test$mse, type = "l", col = "red", xlab = "Trees", ylab = "MSE")
+lines(1:1000, fit2$test$mse, type = "l", col = "blue")
+lines(1:1000, fit3$test$mse, type = "l", col = "green")
+```
+
+
+
+### Question 8.8
+
+## a)
+
+```{r}
+data("Carseats")
+set.seed(100)
+s <- sample(1:nrow(Carseats), nrow(Carseats)*0.7)
+cs_train <- Carseats[s, ]
+cs_test <- Carseats[-s, ]
+```
+
+## b)
+
+```{r}
+
+rt <- tree(Sales ~ ., data = cs_train)
+summary(rt)
+plot(rt)
+text(rt, cex = 0.65)
+
+pred_rt <- predict(rt, cs_test)
+mse_rt <- mean((cs_test$Sales - pred_rt)^2)
+mse_rt
+```
+
+## c)
+
+```{r}
+cv_rt <- cv.tree(rt)
+plot(cv_rt$size, cv_rt$dev, xlab = "Size", ylab = "Deviance", type = "b")
+
+# Pruning
+prune_rt <- prune.tree(rt, best = 5)
+plot(prune_rt)
+text(prune_rt)
+ 
+prune_pred <- predict(prune_rt, cs_test)
+prune_mse <- mean((prune_pred - cs_test$Sales)^2)
+prune_mse
+```
+
+The pruned tree gives a higher MSE than the unpruned tree so it is not improving the results.
+
+## d)
+
+```{r}
+bagging <- randomForest(Sales ~ ., data = cs_train, mtry = 10, importance = TRUE, ntree = 500)
+bagging_pred <- predict(bagging, cs_test)
+bagging_mse <- mean((bagging_pred - cs_test$Sales)^2)
+bagging_mse
+```
+
+Bagging lowers the MSE
+
+```{r}
+importance(bagging)
+```
+
+ShelveLoc, Price and Advertising seem to rank highest in importance
+
+## e)
+
+```{r}
+rf_mse <- c()
+for (i in 1:10) {
+  rf <- randomForest(Sales ~ ., data = cs_train, mtry = i, importance = TRUE, ntree = 500)
+  rf_pred <- predict(rf, cs_test)
+  rf_mse[i] <- mean((rf_pred - cs_test$Sales)^2)
+}
+
+which.min(rf_mse)
+rf_mse[which.min(rf_mse)]
+```
+
+9 variables
+MSE seems slower than bagging and trees
+
+```{r}
+importance(rf)
+```
+
+ShelveLoc,Price and CompPrice seem to rank highest in importance
+
+
+### Question 8.11
+
+## a)
+
+```{r}
+data("Caravan")
+Caravan$Purchase <- ifelse(Caravan$Purchase == "No", 0, 1)
+caravan_train <- Caravan[1:1000, ]
+caravan_test <- Caravan[1001:5822, ]
+```
+
+## b)
+
+```{r, warning=FALSE}
+
+set.seed(100)
+fit_boost <- gbm(Purchase ~ ., data = caravan_train, shrinkage = 0.01, n.trees = 1000, distribution = "bernoulli")
+kable(summary(fit_boost), row.names = F)
+
+```
+
+PPERSAUT, MKOOPKLA, MOPLHOOG, PBRAND and MBERMIDD seem highest in importance.
+
+## c)
+
+```{r}
+# Boosting
+pred_boost <- predict(fit_boost, caravan_test, n.trees = 1000, type = "response")
+boost <- ifelse(pred_boost > 0.2, 1, 0)
+table(caravan_test$Purchase, boost)
+```
+
+34/(34 + 255) = 2/17 people end up making purchases from boosting.
+
+```{r, warning=FALSE}
+# Logistic Regression
+caravan_lr <- glm(Purchase ~ ., data = caravan_train, family = binomial)
+pred <- predict(caravan_lr, caravan_test, type = "response")
+pred_lr <- ifelse(pred > 0.2, 1, 0)
+table(caravan_test$Purchase, pred_lr)
+```
+
+58/(58 + 231) ~ 1/5 people end up making purchases from logistic regression which is a better prediction than boosting.

@@ -1,0 +1,31 @@
+---
+title: "Lab 8"
+author: "Zara Waheed"
+date: "7th April 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.width=6,fig.height=4 ,out.width="1\\linewidth")
+pacman::p_load("class","ISLR","glmnet","ggplot2","arm","knitr","data.table","MASS","klaR","vcd","h2o","e1071", "class", "boot", "leaps", "mgcv", "splines", "gam")
+```
+
+
+### Question 10.1 6 7 8 13
+
+## a) Image
+
+## b) Write out an expression for f(X), assuming ReLU activation functions. Be as explicit as you can!
+
+## c) Now plug in some values for the coefficients and write out the value of f(X).
+## d) How many parameters are there?
+
+### Question 10.6 
+
+
+
+### Question 10.7 
+
+### Question 10.8 
+
+### Question 10.13

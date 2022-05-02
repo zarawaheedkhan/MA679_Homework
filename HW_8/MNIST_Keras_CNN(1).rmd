@@ -1,0 +1,213 @@
+---
+title: "Deep Learning MNIST with Keras"
+output: pdf_document
+---
+
+This is an example from R studio R Keras website.
+https://keras.rstudio.com/articles/examples/mnist_cnn.html
+
+# Package installation
+```{r}
+install.packages("keras")
+install.packages("tensorflow")
+
+# To install both Keras library & TensorFlow backend
+library(keras)
+library(tensorflow)
+#Sys.setenv(RETICULATE_PYTHON="/opt/anaconda3/bin/python3")
+#install_tensorflow()
+```
+
+
+# The data, shuffled and split between train and test sets
+```{r}
+mnist   <- dataset_mnist()
+x_train <- mnist$train$x
+y_train <- mnist$train$y
+x_test  <- mnist$test$x
+y_test  <- mnist$test$y
+```
+
+# tensor
+```{r}
+dim(x_train)
+
+# visualize digit
+digit <- x_train[5,,]
+plot(as.raster(digit, max =255))
+```
+
+# Redefine  dimension of train/test inputs
+```{r}
+x_train <- array_reshape(x_train, c(60000, 28 * 28))
+x_test <- array_reshape(x_test, c(10000, 28 * 28))
+```
+
+# Transform RGB values into [0,1] range
+```{r}
+x_train <- x_train / 255
+x_test  <- x_test / 255
+cat('x_train_shape:', dim(x_train), '\n')
+cat(nrow(x_train), 'train samples\n')
+cat(nrow(x_test), 'test samples\n')
+```
+
+```{r}
+# Convert class vectors to binary class matrices: one-hot encode
+num_classes <- 10
+y_train <- to_categorical(y_train, num_classes)
+y_test <- to_categorical(y_test, num_classes)
+```
+
+## Feed-forward NN
+# Define Model -----------------------------------------------------------
+
+```{r}
+model <- keras_model_sequential() 
+model %>% 
+  layer_dense(units = 256, activation = "relu", input_shape = c(28 * 28)) %>% 
+  layer_dropout(rate = 0.4) %>% 
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 10, activation = "softmax")
+```
+
+```{r}
+model %>% compile(
+  loss = "categorical_crossentropy",
+  optimizer = optimizer_rmsprop(),
+  metrics = c("accuracy")
+)
+```
+
+```{r}
+history <- model %>% fit(
+  x_train, y_train, 
+  epochs = 20, batch_size = 128, 
+  validation_split = 0.2
+)
+```
+
+
+```{r}
+plot(history)
+```
+
+
+
+```{r}
+model %>% evaluate(x_test, y_test,verbose = 0)
+
+```
+
+```{r}
+model %>% predict_classes(x_test)
+
+```
+
+
+
+## CNN
+
+# The data, shuffled and split between train and test sets
+```{r}
+mnist   <- dataset_mnist()
+x_train <- mnist$train$x
+y_train <- mnist$train$y
+x_test  <- mnist$test$x
+y_test  <- mnist$test$y
+```
+
+# Redefine  dimension of train/test inputs
+```{r}
+x_train <- array_reshape(x_train, c(nrow(x_train), 28, 28, 1))
+x_test  <- array_reshape(x_test, c(nrow(x_test), 28, 28, 1))
+input_shape <- c(28, 28, 1)
+```
+
+# Transform RGB values into [0,1] range
+```{r}
+x_train <- x_train / 255
+x_test  <- x_test / 255
+cat('x_train_shape:', dim(x_train), '\n')
+cat(nrow(x_train), 'train samples\n')
+cat(nrow(x_test), 'test samples\n')
+```
+
+```{r}
+# Convert class vectors to binary class matrices
+y_train <- to_categorical(y_train, 10)
+y_test <- to_categorical(y_test, 10)
+```
+
+# Define Model -----------------------------------------------------------
+
+# Define model
+```{r}
+model <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 32, 
+                kernel_size = c(3,3), 
+                activation = 'relu',
+                input_shape = input_shape) %>% 
+  layer_conv_2d(filters = 64, 
+                kernel_size = c(3,3), 
+                activation = 'relu') %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_dropout(rate = 0.25) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 128, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_dense(units = 10, activation = 'softmax')
+```
+
+# alternative
+```{r,eval=FALSE}
+model <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 32, strides=c(1L, 1L),
+                kernel_size = c(5,5), 
+                activation = 'relu',
+                input_shape = input_shape) %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2), strides=c(2L, 2L)) %>% 
+  layer_conv_2d(filters = 64, 
+                kernel_size = c(5,5), 
+                activation = 'relu') %>% 
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 1000, activation = 'relu') %>% 
+  layer_dense(units = 10, activation = 'softmax')
+```
+# Compile model
+
+```{r}
+model %>% compile(
+  loss = loss_categorical_crossentropy,
+  optimizer = optimizer_adadelta(),
+  metrics = c('accuracy')
+)
+```
+
+# Train model
+
+```{r}
+model %>% fit(
+  x_train, y_train,
+  batch_size = 128,
+  epochs = 4,
+  validation_split = 0.2
+)
+```
+
+# Evaluate the model
+
+```{r}
+scores <- model %>% evaluate(
+  x_test, y_test, verbose = 0
+)
+```
+
+# Output metrics
+
+```{r}
+cat('Test loss:', scores[[1]], '\n')
+cat('Test accuracy:', scores[[2]], '\n')
+```

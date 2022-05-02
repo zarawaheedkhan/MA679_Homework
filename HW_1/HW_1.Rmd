@@ -1,0 +1,307 @@
+---
+title: "Lab1"
+author: "Zara Waheed"
+date: "4th Feb 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+summary(cars)
+```
+
+### Question 1:
+
+The intercept represents the number of sales if all mother predictors are at 0, which from the p-value we can gauge that is very unlikely to happen in real life. TV is likely to increase in 46 sales units per $1000 spent on advertising. Every $1000 spent on radio advertising increases sales by around 189 units.Spending no money on Radio or TV advertising is very unlikely as can be seen from the p values. Newspaper advertising is meant to have a negative effect by 1 sale unit on sales but the p value shows us that there is a high chnace that the relationship between sales and newspaper advertising is not significant.
+
+### Question 2:
+
+KNN classification tries to predict the class to which the output variable belongs to by finding out the nearest points probability.
+KNN regression tries to predict the value of the output variable by using an nearest points average. 
+
+### Question 5
+
+We add both equations together by substituting beta into the `y^_i` equation. We get `x_i (sum x_j y_j)/( sum x_k^2)`. `x_i` is added to the summation. Now `a_j` is set equal to `(x_i x_j)/sum x_k^2` and we get `y^_i = sum a_j y_j`
+
+
+### Question 6
+
+If x axis is shifted by `mean(x)`, the y axis should equal `mean(y)` given `B_1`. To show this let's plug in `f(mean(x))` into the linear equation which gives us `x=mean(x) y=B_0 + B_1 mean(x)`. Plugging the optimal values of `B_0` into the equation gives us `y=(mean(y) - B_1*mean(x)) + B_1*mean(x)`. That gives us `y=mean(y)` when `x=mean(x)`.
+
+### Question 11
+
+```{r}
+set.seed(100)
+x=rnorm(100)
+y=2*x+rnorm(100)
+```
+
+## a)
+
+```{r}
+fit11a=lm(y~x+0)
+summary(fit11a)
+```
+
+The estimate is 1.89 when we 2x gives us y. This shows a good fit because the probability that we actually did not multiply x by anything as in the p-value, is very low and the t-statistic is high.
+
+## b)
+
+```{r}
+fit11b=lm(x~y+0)
+summary(fit11b)
+```
+
+The coefficient is much smaller than the previous case because of the switching of the y and x. 
+This also shows a good fit but a bit less than the previous one. However, the probability that we actually did not multiply x by anything as in the p-value, is very low and the t-statistic is high.
+
+## c)
+
+These two results are almost inverses of each other.
+
+## d)
+
+`B^=(sum_j x_j y_j)/(sum_k x^2_k)`
+
+`y_i^2 + 2x_i*B^*y_i+x_iB^^2`
+
+...
+
+## e)
+
+I we substitute x for y in the equation gives us the exact same equation. Therefore, the t-statistic would also be the same for both cases.
+
+## f)
+
+```{r}
+fit11f.1=lm(y~x)
+fit11f.2=lm(x~y)
+t1=summary(fit11f.1)$coefficients[2,3]
+t2=summary(fit11f.2)$coefficients[2,3]
+t1
+t2
+````
+
+
+### Question 12
+
+## a)
+
+If the coefficient is 1, they would be the same. 
+
+## b) 
+
+```{r}
+x=rnorm(100)
+y=0.5*x+rnorm(100)
+fit12b.1 <- lm(x~y+0)
+fit12b.2 <- lm(y~x+0)
+summary(fit12b.1)
+summary(fit12b.2)
+```
+
+
+## c) 
+
+```{r}
+x=rnorm(100)
+y=1*x
+fit12c.1 <- lm(x~y+0)
+fit12c.2 <- lm(y~x+0)
+summary(fit12c.1)
+summary(fit12c.2)
+```
+
+
+### Question 13 
+
+## a)
+
+```{r}
+x=rnorm(100)
+```
+
+## b)
+
+```{r}
+eps=rnorm(100,0,0.25)
+```
+
+## c)
+
+```{r}
+y=-1+0.5*x+eps
+```
+
+y = 100
+B0 = -1
+B1 = 0.5
+
+## d)
+
+```{r}
+plot(x,y)
+abline(lm(y~x))
+```
+
+## e)
+
+```{r}
+fit13e=lm(y~x)
+summary(fit13e)
+```
+
+The predicted B0 and B1 are very close to the actual B0 and B1.
+
+## f) 
+
+```{r}
+plot(x,y)
+abline(lm(y~x),col="blue",lwd=3)
+legend("topright", legend="Least Squares", lty=1, lwd=3, col="blue")
+```
+
+## g)
+
+```{r}
+fit13g=lm(y~poly(x,2))
+summary(fit13g)
+```
+
+The adjusted `R^2` value is worse and the high p-value of x^2 shows that the fit is not great.
+
+## h)
+
+```{r}
+eps2=rnorm(100,0,0.025)
+y2=-1+0.5*x+eps2
+fit13h=lm(y2~x)
+summary(fit13h)
+plot(x,y2)
+abline(fit13h,col="blue",lwd=3)
+legend("topright", legend="Least Squares Fit", lty=1, lwd=3, col="blue")
+```
+
+The estimate of the previous model was better. Also the points are very close to the best fit least-squares line.
+
+## i)
+
+```{r}
+eps3=rnorm(100,0,1)
+y3=-1+0.5*x+eps3
+fit13i=lm(y3~x)
+summary(fit13i)
+plot(x,y3)
+abline(fit13i,col="blue",lwd=3)
+legend("topright", legend="Least Squares", lty=1, lwd=3, col="blue")
+```
+
+The noise makes it hard for the model to estimate the intercept and slope and the estimates are further away from part e) and h). This can be seen in the figure around the best fit line as well.
+
+## j)
+
+```{r}
+confint(fit13e)
+confint(fit13h)
+confint(fit13i)
+```
+
+The confidence interval increases and decreases with the error.
+
+
+### Question 14
+
+## a) 
+
+```{r}
+set.seed(1)
+x1=runif(100)
+x2=0.5*x1+rnorm(100)/10
+y=2+2*x1+0.3*x2+rnorm(100)
+```
+
+The equation of the line is `y=b0+b1*x1+b2*x2+e`. The regression coefficients are 2, 2 and 0.3 for the intercept, x1, and x2, respectively. 
+
+## b)
+What is the correlation between x1 and x2? Create a scatterplot displaying the relationship between the variables.
+```{r}
+cor(data.frame(y=y, x1=x1, x2=x2))
+```
+
+```{r}
+pairs(data.frame(y=y, x1=x1, x2=x2))
+```
+
+x1 and x2 are highly correlated, with a pearson's correlation of 0.8. This colinearity is visable in the pairs plot.
+
+## c)
+
+```{r}
+fit14c=lm(y~x1+x2)
+summary(fit14c)
+```
+
+The intercept is about the same and the null can be rejected based on that. The b1 coefficient is smaller, so rejecting the null is a bit difficult. With b1 it's greater so we cannot reject the null. 
+
+## d)
+
+```{r}
+fit14d=lm(y~x1)
+summary(fit14d)
+```
+
+The intercept is a bit larger, and b1 is a bit smaller, but the adjusted `R2` is better and the `b1` estimate seems more significant. Overall the fit seems better.
+
+## e)
+
+```{r}
+fit14e=lm(y~x2)
+summary(fit14e)
+```
+
+This one is not as good a fit, but b0 has a low p-value.
+
+## f)
+
+Since x1 and x2 are correlated, they are giving a good relationship with y individially but not when they are all meshed together in one equation. The results from c) to e) correspond to that.
+
+## g)
+
+```{r}
+x1=c(x1, 0.1)
+x2=c(x2, 0.8)
+y=c(y,6)
+```
+
+```{r fig.height=11, fig.width=11}
+fit14g.c=lm(y~x1+x2)
+summary(fit14g.c)
+fit14g.d=lm(y~x1)
+summary(fit14g.d)
+fit14g.e=lm(y~x2)
+summary(fit14g.e)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit14g.c, main="y~x1")
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit14g.d, main="y~x1")
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit14g.e, main="y~x2")
+```
+
+When we include both x1 and x2 in the model, the point does not appear to be an outlier but does have a significant leverage point on the residuals vs leverage plot.
+
+When we have only x1 in the model, the point does appear to be an outlier but no leverage point.
+
+With we have only x2 in the model, the point does not seem to be an outlier, but has a little more leverage.

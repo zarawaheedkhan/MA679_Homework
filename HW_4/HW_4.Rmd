@@ -1,0 +1,251 @@
+---
+title: "Lab 4"
+author: "Zara Waheed"
+date: "25th Feb 2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.width=6,fig.height=4 ,out.width="1\\linewidth")
+pacman::p_load("class","ISLR","glmnet","ggplot2","arm","knitr","data.table","MASS","klaR","vcd","h2o","e1071", "class", "boot", "leaps", "mgcv", "splines", "gam")
+```
+
+
+### Question 7.3
+
+```{r}
+X <- -2:2
+Y <- 1 + 1*X - 2*((X - 1)^2)*I(X >= 1)
+plot(X, Y, type = "l")
+```
+
+### Question 7.9
+
+## a) 
+
+```{r, fig.width=3, fig.height=3}
+set.seed(1)
+fit7.9a <- lm(nox ~ poly(dis, 3), data = Boston)
+summary(fit7.9a)
+```
+
+```{r}
+lim <- range(Boston$dis)
+grid <- seq(lim[1], lim[2])
+pred <- predict(fit7.9a, list(dis = grid), se = TRUE)
+
+se <- cbind(pred$fit + 2*pred$se.fit, pred$fit - 2*pred$se.fit)
+
+plot(Boston$dis, Boston$nox, col = "red")
+lines(grid, pred$fit, col = "blue", lwd = 3)
+matlines(grid, se, lwd = 3, col = "green", lty = 3)
+```
+
+
+## b)
+
+```{r}
+set.seed(1)
+rss <- rep(NA, 10)
+for (i in 1:10){
+  fit <- lm(nox ~ poly(dis, i), data = Boston)
+  rss[i] <- sum(fit$residuals^2)
+}
+plot(1:10, rss, type = "l", lwd = 3)
+points(which.min(rss), rss[which.min(rss)], col='blue',pch=10)
+```
+
+## c)
+
+```{r}
+errors <- rep(NA, 10)
+for (i in 1:10) {
+  fit <- glm(nox ~ poly(dis, i), data = Boston)
+  errors[i] <- cv.glm(Boston, fit, K = 10)$delta[1]
+}
+plot(1:10, errors, type = "l", lwd = 3)
+points(which.min(errors), errors[which.min(errors)], col='blue',pch=15)
+```
+
+
+## d) 
+
+```{r}
+summary(Boston$dis)
+fit7.9d <- lm(nox ~ bs(dis, df = 4), Boston)
+
+summary(fit7.9d)
+attr(bs(Boston$dis, df = 4), "knots")
+
+x <- seq(min(Boston$dis), max(Boston$dis))
+y <- predict(fit7.9d, data.frame(dis = x))
+
+plot(Boston$dis, Boston$nox, col = "blue")
+lines(x, y, lwd = 2)
+```
+At 4 degrees of freedom, we get the knot at 3.207
+
+## e) 
+
+```{r}
+df_vs_rss <- c()
+for (i in 3:20) {
+  fit <- lm(nox ~ bs(dis, df = i), data = Boston)
+  pred <- predict(fit, data.frame(dis = x))
+  df_vs_rss[i] <- sum(fit$residuals^2)
+}
+plot(1:20, df_vs_rss, xlab = "df", ylab = "RSS", type = "l", lwd = 2)
+points(which.min(df_vs_rss), df_vs_rss[which.min(df_vs_rss)], col='red',pch=15)
+```
+14 degrees of freedom gives us the lowest RSS value.
+
+
+## f)
+
+```{r, warning=FALSE, message=FALSE}
+set.seed(100)
+cv <- rep(NA, 20)
+for (i in 3:20) {
+  fit <- glm(nox ~ bs(dis, df = i), data = Boston)
+  cv[i] <- cv.glm(Boston, fit, K = 10)$delta[1]
+}
+plot(3:20, cv[3:20], xlab = "df", ylab = "MSE", type = "l")
+points(which.min(cv), cv[which.min(cv)], col = "blue", pch = 15)
+```
+
+14 degrees of freedom gives us the lowest MSE value.
+
+
+### Question 7.10
+
+## a)
+
+```{r}
+data("College")
+
+# Create test and train datasets
+set.seed(100)
+train_s <- sample(1:nrow(College), 500)
+train <- College[train_s,] 
+test <- College[-train_s,]
+
+fit7.10a <- regsubsets(Outstate ~ ., train, nvmax = ncol(College)-1, method = "forward")
+
+
+# FSS
+fss_summary <- summary(fit7.10a)
+par(mfrow = c(1, 3))
+plot(fss_summary$cp, xlab = "Variables", ylab = "CP", type = "l")
+min.cp <- min(fss_summary$cp)
+std.cp <- sd(fss_summary$cp)
+abline(h = min.cp + 0.2 * std.cp, col = "blue", lty = 2)
+abline(h = min.cp - 0.2 * std.cp, col = "blue", lty = 2)
+
+# BIC
+plot(fss_summary$bic, xlab = "Variables", ylab = "BIC", type='l')
+min.bic <- min(fss_summary$bic)
+std.bic <- sd(fss_summary$bic)
+abline(h = min.bic + 0.2 * std.bic, col = "red", lty = 2)
+abline(h = min.bic - 0.2 * std.bic, col = "red", lty = 2)
+
+# Adjusted R^2
+plot(fss_summary$adjr2, xlab = "Variables", ylab = "AR^2", type = "l", ylim = c(0.4, 0.84))
+max.ar2 <- max(fss_summary$ar2)
+sd.ar2 <- sd(fss_summary$ar2)
+abline(h = max.ar2 + 0.2 * sd.ar2, col = "green", lty = 2)
+abline(h = max.ar2 - 0.2 * sd.ar2, col = "green", lty = 2)
+```
+The model metrics do not seem to improve much after 6 predictors.
+
+## b) 
+
+```{r, message=FALSE}
+fit7.10b <- gam(Outstate ~ Private + s(Room.Board,2) + s(PhD,2) + s(perc.alumni,2) + s(Expend,5) + s(Grad.Rate,2), data = train)
+par(mfrow = c(2,3))
+plot(fit7.10b, se = TRUE, col = "red")
+```
+
+
+## d)
+
+```{r, warning=FALSE}
+summary(fit7.10a)
+```
+The relationship seems to be non-linear
+
+### Question 7.11
+
+## a) 
+
+```{r}
+set.seed(100)
+y <- rnorm(100)
+x1 <- rnorm(100)
+x2 <- rnorm(100)
+```
+
+
+## b) 
+
+```{r}
+b1 <- 1
+```
+
+## c)
+
+```{r}
+a <- y - b1*x1
+b2 <- lm(a~x2)$coef[2]
+```
+
+## d) 
+
+```{r}
+a <- y- b2*x2
+b1 <- lm(a~x1)$coef[2]
+```
+
+
+## e) 
+
+```{r}
+iterations <- 10
+df <- data.frame(0.0, 0.27, 0.0)
+names(df) <- c('b0', 'b1', 'b2')
+for (i in 1:iterations) {
+  b1 <- df[nrow(df), 2]
+  a <- y - b1 * x1
+  b2 <- lm(a ~ x2)$coef[2]
+  a <- y - b2 * x2
+  b1 <- lm(a ~ x1)$coef[2]
+  b0 <- lm(a ~ x1)$coef[1]
+  b0
+  b1
+  b2
+  df[nrow(df) + 1,] <- list(b0, b1, b2)
+}
+```
+
+```{r}
+plot(df$b0, col = 'red', type = 'l')
+lines(df$b1, col = 'blue')
+lines(df$b2, col = 'green')
+```
+
+
+## f) 
+
+```{r}
+plot(df$b0, col = 'yellow', type = 'l')
+lines(df$b1, col = 'blue')
+lines(df$b2, col = 'red')
+
+d <- coef(lm(y ~ x1 + x2))
+abline(h = d[1], col = 'orange', lty = 3)
+abline(h = d[2], col = 'purple', lty = 3)
+abline(h = d[3], col = 'pink', lty = 3)
+```
+
+## g) 
+
+More than 5 iterations were required for a good approximation.
